@@ -2,10 +2,12 @@ package com.example.qreal_v2;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
+import android.hardware.Camera;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -66,8 +68,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
+    private Camera camera;
     public void captureIntent(){
+
+        // opening up camera activity
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         if (cameraIntent.resolveActivity(getPackageManager()) != null) {
             startActivityForResult(cameraIntent, REQUEST_PICTURE_CAPTURE);
@@ -79,19 +83,23 @@ public class MainActivity extends AppCompatActivity {
                 Uri photoURI = FileProvider.getUriForFile(this,
                         "com.example.qreal_v2.fileprovider",
                         pictureFile);
+
+                // putting the camera activity in the photouri
                 cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
-                startActivityForResult(cameraIntent, REQUEST_PICTURE_CAPTURE);
+                startActivityForResult(cameraIntent,REQUEST_PICTURE_CAPTURE);
             }
         }
     }
 
     public File getPictureFile(){
         //String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
-        String pictureFile = "Post_Image";
+        String pictureFile = "Post_Image.jpg";
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
 
         try {
-            image = File.createTempFile(pictureFile, ".jpg", storageDir);
+
+            // everytime the image will be Post_Image.jpg instead of a unique name
+            image      = new File(storageDir, pictureFile);
 
         }
         catch(Exception e){
@@ -100,6 +108,9 @@ public class MainActivity extends AppCompatActivity {
 
         return image;
     }
+
+
+    // this will extract the image that has been saved. The new image is saved in imageFile1
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
@@ -110,74 +121,17 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, "Your image is created", Toast.LENGTH_SHORT).show();;
               //  image.setImageURI(Uri.fromFile(imgFile));
                Log.e("IMAGE EXISTS", "IMAGE HAS BEEN CREATED IN ON RESULT ACTIVITY WITH LENGTH "+imageFile1.length());
-               uploadPicture(imageFile1);
+              // uploadPicture(imageFile1);
+
+                // transfer the image from one activity to another
+               Intent intent1 = new Intent (MainActivity.this, Result.class);
+                intent1.putExtra("picture", imageFile1);
+                startActivity(intent1);
             }
+            //Log.e("ERRPOR", "NOT CREATED FINAL IMAGE "+imageFile1.length());
         }
 
     }
-
-    public void uploadPicture(File imageFile){
-        System.out.println("The imagefile is stored in "+imageFile);
-        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
-        HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor();
-        loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        clientBuilder.addInterceptor(loggingInterceptor);
-
-
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(DjangoApi.DJANGO_SITE)
-                .client(clientBuilder.build())
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-
-        Log.d("Django post API", retrofit+"");
-
-
-        DjangoApi postApi= retrofit.create(DjangoApi.class);
-
-        Log.d("message", postApi+"");
-        Log.d(imageFile.getName(),"IMAGE FILE NAME");
-        Log.d(imageFile.canRead()+"","CAN READ IMAGEFILE?");
-        Log.d(imageFile.length()+"","LENGTH OF IMAGEFILE");
-
-
-        RequestBody requestBody = RequestBody.create(MediaType.parse("multipart/form-data"), imageFile);
-
-        try {
-            if (requestBody != null) {
-                Log.d("debug", "REQUEST BODY LENGTH: " + requestBody.contentLength());
-                Log.d("debug", "REQUEST BODY FILE TYPE: " + requestBody.contentType());
-            }
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        MultipartBody.Part multiPartBody = MultipartBody.Part
-                .createFormData("model_pic", imageFile.getName(), requestBody);
-
-
-
-
-        Call<RequestBody> call = postApi.uploadFile(multiPartBody);
-
-        call.enqueue(new Callback<RequestBody>() {
-            @Override
-            public void onResponse(Call<RequestBody> call, Response<RequestBody> response) {
-                Log.d("good", "good");
-
-            }
-            @Override
-            public void onFailure(Call<RequestBody> call, Throwable t) {
-
-                Log.d("fail", t.getMessage());
-            }
-        });
-
-
-    }
-
-
 
 
 }

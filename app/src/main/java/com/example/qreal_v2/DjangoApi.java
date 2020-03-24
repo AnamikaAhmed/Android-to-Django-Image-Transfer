@@ -10,7 +10,7 @@ import retrofit2.http.Part;
 
 public interface DjangoApi {
 
-    String DJANGO_SITE = "http://192.168.0.102:8000/image/";
+    String DJANGO_SITE = "http://192.168.0.103:8000/image/";
 
 
 
